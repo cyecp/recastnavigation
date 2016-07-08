@@ -29,9 +29,7 @@ template<class T> class dtFixedArray
 	dtTileCacheAlloc* m_alloc;
 	T* m_ptr;
 	const int m_size;
-	inline T* operator=(T* p);
 	inline void operator=(dtFixedArray<T>& p);
-	inline dtFixedArray();
 public:
 	inline dtFixedArray(dtTileCacheAlloc* a, const int s) : m_alloc(a), m_ptr((T*)a->alloc(sizeof(T)*s)), m_size(s) {}
 	inline ~dtFixedArray() { if (m_alloc) m_alloc->free(m_ptr); }
@@ -2027,7 +2025,11 @@ dtStatus dtBuildTileCacheLayer(dtTileCacheCompressor* comp,
 	const int bufferSize = gridSize*3;
 	unsigned char* buffer = (unsigned char*)dtAlloc(bufferSize, DT_ALLOC_TEMP);
 	if (!buffer)
+	{
+		dtFree(data);
 		return DT_FAILURE | DT_OUT_OF_MEMORY;
+	}
+
 	memcpy(buffer, heights, gridSize);
 	memcpy(buffer+gridSize, areas, gridSize);
 	memcpy(buffer+gridSize*2, cons, gridSize);
@@ -2038,7 +2040,11 @@ dtStatus dtBuildTileCacheLayer(dtTileCacheCompressor* comp,
 	int compressedSize = 0;
 	dtStatus status = comp->compress(buffer, bufferSize, compressed, maxCompressedSize, &compressedSize);
 	if (dtStatusFailed(status))
+	{
+		dtFree(buffer);
+		dtFree(data);
 		return status;
+	}
 
 	*outData = data;
 	*outDataSize = headerSize + compressedSize;
